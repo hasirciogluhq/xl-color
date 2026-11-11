@@ -1,0 +1,16 @@
+import Color, Attribute from "./color.xl"
+import String from "std/str/string"
+import println from "std/io"
+
+fn Red(s: String)    { Color.new([Attribute.FgRed]).Print(s) }
+fn Green(s: String)  { Color.new([Attribute.FgGreen]).Print(s) }
+fn Yellow(s: String) { Color.new([Attribute.FgYellow]).Print(s) }
+fn Blue(s: String)   { Color.new([Attribute.FgBlue]).Print(s) }
+fn Cyan(s: String)   { Color.new([Attribute.FgCyan]).Print(s) }
+fn Magenta(s: String){ Color.new([Attribute.FgMagenta]).Print(s) }
+fn White(s: String)  { Color.new([Attribute.FgWhite]).Print(s) }
+
+fn RedString(s: String) -> String    { return Color.new([Attribute.FgRed]).wrap(s) }
+fn GreenString(s: String) -> String  { return Color.new([Attribute.FgGreen]).wrap(s) }
+fn YellowString(s: String) -> String { return Color.new([Attribute.FgYellow]).wrap(s) }
+fn BlueString(s: String) -> String   { return Color.new([Attribute.FgBlue]).wrap(s) }
