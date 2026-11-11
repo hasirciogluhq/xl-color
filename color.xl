@@ -1,0 +1,68 @@
+const ESCAPE = "\x1b"
+
+enum Attribute {
+    Reset = 0
+    Bold
+    Faint
+    Italic
+    Underline
+
+    FgBlack = 30
+    FgRed
+    FgGreen
+    FgYellow
+    FgBlue
+    FgMagenta
+    FgCyan
+    FgWhite
+
+    FgHiBlack = 90
+    FgHiRed
+    FgHiGreen
+    FgHiYellow
+    FgHiBlue
+    FgHiMagenta
+    FgHiCyan
+    FgHiWhite
+
+    BgBlack = 40
+    BgRed
+    BgGreen
+    BgYellow
+    BgBlue
+    BgMagenta
+    BgCyan
+    BgWhite
+}
+
+class Color {
+    params: [Attribute]
+    noColor: bool
+
+    fn new(attrs: [Attribute]) -> Color {
+        return Color { params: attrs, noColor: false }
+    }
+
+    fn format(self) -> String {
+        if self.noColor {
+            return String("")
+        }
+        local seq := String("")
+        for i, a in self.params {
+            if i > 0 { seq = seq + ";" }
+            seq = seq + String(a as i32)
+        }
+        return String(ESCAPE) + "[" + seq + "m"
+    }
+
+    fn wrap(self, s: String) -> String {
+        if self.noColor {
+            return s
+        }
+        return self.format() + s + String(ESCAPE) + "[0m"
+    }
+
+    fn Print(self, s: String) {
+        println("{}", self.wrap(s).asStr())
+    }
+}
