@@ -1,0 +1,36 @@
+name: release
+
+# A version tag publishes a GitHub release once the tests pass on every host. xl installs packages from the tag itself
+# (xlang-docs compiler/packages), so the release carries notes, not assets.
+# Tags: vMAJOR.MINOR.PATCH is a stable release; a tag with a `-suffix` (v1.0.0-rc.1) is marked a pre-release.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Publish ${{ github.ref_name }}
+    needs: test
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Create the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || { echo "error: tag '$TAG' must look like v1.2.3 or v1.2.3-rc.1" >&2; exit 1; }
+          flags=(--generate-notes --title "xl-color $TAG" --verify-tag -R "$GITHUB_REPOSITORY")
+          [[ "$TAG" == *-* ]] && flags+=(--prerelease)
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || gh release create "$TAG" "${flags[@]}"

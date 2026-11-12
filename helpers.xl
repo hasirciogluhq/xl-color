@@ -1,16 +1,72 @@
-import Color, Attribute from "./color.xl"
-import String from "std/str/string"
-import println from "std/io"
+// Short forms: `red("error")` is `Color(Attribute.FgRed).wrap("error")`, `style(...)` builds a `Color` from several attributes,
+// and `strip` removes escape sequences again.
+from "std" import String
+from "attribute" import Attribute
+from "color" import Color
 
-fn Red(s: String)    { Color.new([Attribute.FgRed]).Print(s) }
-fn Green(s: String)  { Color.new([Attribute.FgGreen]).Print(s) }
-fn Yellow(s: String) { Color.new([Attribute.FgYellow]).Print(s) }
-fn Blue(s: String)   { Color.new([Attribute.FgBlue]).Print(s) }
-fn Cyan(s: String)   { Color.new([Attribute.FgCyan]).Print(s) }
-fn Magenta(s: String){ Color.new([Attribute.FgMagenta]).Print(s) }
-fn White(s: String)  { Color.new([Attribute.FgWhite]).Print(s) }
+/// A `Color` with every attribute given, in order: `style(Attribute.Bold, Attribute.FgRed)`.
+export fn style(..attrs) -> Color {
+    local c = Color()
+    for a in attrs { c.add(a) }
+    return c
+}
 
-fn RedString(s: String) -> String    { return Color.new([Attribute.FgRed]).wrap(s) }
-fn GreenString(s: String) -> String  { return Color.new([Attribute.FgGreen]).wrap(s) }
-fn YellowString(s: String) -> String { return Color.new([Attribute.FgYellow]).wrap(s) }
-fn BlueString(s: String) -> String   { return Color.new([Attribute.FgBlue]).wrap(s) }
+fn paint(a: Attribute, s: str) -> String {
+    local c = Color(a)
+    return c.wrap(s)
+}
+
+export fn black(s: str) -> String { return paint(Attribute.FgBlack, s) }
+export fn red(s: str) -> String { return paint(Attribute.FgRed, s) }
+export fn green(s: str) -> String { return paint(Attribute.FgGreen, s) }
+export fn yellow(s: str) -> String { return paint(Attribute.FgYellow, s) }
+export fn blue(s: str) -> String { return paint(Attribute.FgBlue, s) }
+export fn magenta(s: str) -> String { return paint(Attribute.FgMagenta, s) }
+export fn cyan(s: str) -> String { return paint(Attribute.FgCyan, s) }
+export fn white(s: str) -> String { return paint(Attribute.FgWhite, s) }
+
+export fn gray(s: str) -> String { return paint(Attribute.FgHiBlack, s) }
+export fn hiRed(s: str) -> String { return paint(Attribute.FgHiRed, s) }
+export fn hiGreen(s: str) -> String { return paint(Attribute.FgHiGreen, s) }
+export fn hiYellow(s: str) -> String { return paint(Attribute.FgHiYellow, s) }
+export fn hiBlue(s: str) -> String { return paint(Attribute.FgHiBlue, s) }
+export fn hiMagenta(s: str) -> String { return paint(Attribute.FgHiMagenta, s) }
+export fn hiCyan(s: str) -> String { return paint(Attribute.FgHiCyan, s) }
+export fn hiWhite(s: str) -> String { return paint(Attribute.FgHiWhite, s) }
+
+export fn bold(s: str) -> String { return paint(Attribute.Bold, s) }
+export fn faint(s: str) -> String { return paint(Attribute.Faint, s) }
+export fn italic(s: str) -> String { return paint(Attribute.Italic, s) }
+export fn underline(s: str) -> String { return paint(Attribute.Underline, s) }
+export fn reverse(s: str) -> String { return paint(Attribute.Reverse, s) }
+export fn strike(s: str) -> String { return paint(Attribute.Strike, s) }
+
+define ESC = 27
+define CSI = 91             // `[` after ESC
+
+/// `s` without its escape sequences, to measure or log colored text. A CSI sequence is `ESC [`, parameter and intermediate
+/// bytes, then one final byte 0x40-0x7E (ECMA-48 section 5.4); an ESC that starts no CSI sequence is kept.
+export fn strip(s: str) -> String {
+    local out = String()
+    local afterEsc = false
+    local inCsi = false
+    for p in s {
+        local b = *p
+        if inCsi {
+            inCsi = b < 0x40 || b > 0x7e
+        } else if afterEsc {
+            afterEsc = b == ESC
+            inCsi = b == CSI
+            if !inCsi {
+                out.push(ESC)
+                if !afterEsc { out.push(b) }
+            }
+        } else if b == ESC {
+            afterEsc = true
+        } else {
+            out.push(b)
+        }
+    }
+    if afterEsc { out.push(ESC) }
+    return out
+}

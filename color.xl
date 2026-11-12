@@ -1,68 +1,141 @@
-const ESCAPE = "\x1b"
+// `Color`: a set of SGR parameters written as one sequence `ESC [ p1 ; p2 ; ... m` before the text and `ESC [ 0 m` after it
+// (ECMA-48 section 8.3.117). 256-color and 24-bit colors are the ITU-T T.416 forms `38;5;n` and `38;2;r;g;b` (48 for the
+// background) that xterm, iTerm2, Windows Terminal, VS Code and most current terminals accept
+// (https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Functions-using-CSI-_-ordered-by-the-final-character_s_).
+from "std" import String, toString, format, print as writeOut, println as writeLine
+from "attribute" import Attribute
+from "detect" import enabled
 
-enum Attribute {
-    Reset = 0
-    Bold
-    Faint
-    Italic
-    Underline
+define RESET = "\x1b[0m"
+define FOREGROUND = 38
+define BACKGROUND = 48
+define PALETTE = 5          // `38;5;n`: one index of the 256-color palette
+define TRUECOLOR = 2        // `38;2;r;g;b`: 24-bit color
 
-    FgBlack = 30
-    FgRed
-    FgGreen
-    FgYellow
-    FgBlue
-    FgMagenta
-    FgCyan
-    FgWhite
+export class Color {
+    params: String          // the parameters joined with `;`, e.g. `1;38;2;255;136;0`
 
-    FgHiBlack = 90
-    FgHiRed
-    FgHiGreen
-    FgHiYellow
-    FgHiBlue
-    FgHiMagenta
-    FgHiCyan
-    FgHiWhite
+    fn init(self) {
+        self.params = String()
+    }
 
-    BgBlack = 40
-    BgRed
-    BgGreen
-    BgYellow
-    BgBlue
-    BgMagenta
-    BgCyan
-    BgWhite
+    fn init(self, a: Attribute) {
+        self.params = String()
+        self.add(a)
+    }
+
+    /// Adds one attribute (a style, a basic color or a basic background).
+    fn add(self, a: Attribute) {
+        self.param(a as u64)
+    }
+
+    /// Foreground from the 256-color palette: 0-15 the basic and bright colors, 16-231 a 6x6x6 cube, 232-255 a gray ramp.
+    fn fg256(self, n: u8) {
+        self.palette(FOREGROUND, n)
+    }
+
+    /// Background from the 256-color palette.
+    fn bg256(self, n: u8) {
+        self.palette(BACKGROUND, n)
+    }
+
+    /// 24-bit foreground.
+    fn rgb(self, r: u8, g: u8, b: u8) {
+        self.truecolor(FOREGROUND, r, g, b)
+    }
+
+    /// 24-bit background.
+    fn bgRgb(self, r: u8, g: u8, b: u8) {
+        self.truecolor(BACKGROUND, r, g, b)
+    }
+
+    /// 24-bit foreground from `#rrggbb`, `rrggbb`, `#rgb` or `rgb`; false, and nothing added, for anything else.
+    fn hex(self, code: str) -> bool {
+        return self.hexColor(FOREGROUND, code)
+    }
+
+    /// 24-bit background from a hex code, as `hex`.
+    fn bgHex(self, code: str) -> bool {
+        return self.hexColor(BACKGROUND, code)
+    }
+
+    /// True when nothing was added.
+    fn isEmpty(self) -> bool {
+        return self.params.length() == 0
+    }
+
+    /// The sequence that turns the attributes on; empty when escape sequences are off (`enabled`) or nothing was added.
+    fn sequence(self) -> String {
+        return enabled() && !self.isEmpty() ? format("\x1b[{}m", &self.params) : String()
+    }
+
+    /// `s` between the sequence and a reset; `s` unchanged when the sequence is empty.
+    fn wrap(self, s: str) -> String {
+        local out = self.sequence()
+        if out.length() == 0 { return String(s) }
+        out.append(s)
+        out.append(RESET)
+        return out
+    }
+
+    fn wrap(self, s: *String) -> String {
+        return self.wrap(s.asStr())
+    }
+
+    /// Writes `s`, wrapped, to standard output.
+    fn print(self, s: str) {
+        local text = self.wrap(s)
+        writeOut(&text)
+    }
+
+    /// Writes `s`, wrapped, and a line break to standard output. The line break follows the reset, so the color never runs
+    /// into the next line.
+    fn println(self, s: str) {
+        local text = self.wrap(s)
+        writeLine(text.asStr())
+    }
+
+    fn palette(self, layer: u64, n: u8) {
+        self.param(layer)
+        self.param(PALETTE)
+        self.param(n)
+    }
+
+    fn truecolor(self, layer: u64, r: u8, g: u8, b: u8) {
+        self.param(layer)
+        self.param(TRUECOLOR)
+        self.param(r)
+        self.param(g)
+        self.param(b)
+    }
+
+    fn hexColor(self, layer: u64, code: str) -> bool {
+        local digits = String(code)
+        if digits.startsWith("#") { digits = digits.slice(1, digits.length() - 1) }
+        local short = digits.length() == 3
+        if !short && digits.length() != 6 { return false }
+        local rgb: [u8; 3]
+        for channel, i in rgb {
+            local hi = nibble(digits.at(short ? i : 2 * i))
+            local lo = short ? hi : nibble(digits.at(2 * i + 1))
+            if hi < 0 || lo < 0 { return false }
+            *channel = (hi * 16 + lo) as u8
+        }
+        self.truecolor(layer, rgb[0], rgb[1], rgb[2])
+        return true
+    }
+
+    fn param(self, n: u64) {
+        if !self.isEmpty() { self.params.push(59) }     // `;`
+        local digits = toString(n)
+        self.params.append(&digits)
+    }
 }
 
-class Color {
-    params: [Attribute]
-    noColor: bool
-
-    fn new(attrs: [Attribute]) -> Color {
-        return Color { params: attrs, noColor: false }
-    }
-
-    fn format(self) -> String {
-        if self.noColor {
-            return String("")
-        }
-        local seq := String("")
-        for i, a in self.params {
-            if i > 0 { seq = seq + ";" }
-            seq = seq + String(a as i32)
-        }
-        return String(ESCAPE) + "[" + seq + "m"
-    }
-
-    fn wrap(self, s: String) -> String {
-        if self.noColor {
-            return s
-        }
-        return self.format() + s + String(ESCAPE) + "[0m"
-    }
-
-    fn Print(self, s: String) {
-        println("{}", self.wrap(s).asStr())
-    }
+/// The value of one hex digit, or -1.
+fn nibble(c: u8) -> i32 {
+    if c >= 48 && c <= 57 { return (c - 48) as i32 }         // 0-9
+    if c >= 97 && c <= 102 { return (c - 87) as i32 }        // a-f
+    if c >= 65 && c <= 70 { return (c - 55) as i32 }         // A-F
+    return -1
 }

@@ -1,0 +1,59 @@
+// Whether escape sequences are written at all. Decided once per program, on first use, unless `setEnabled` forces it:
+//   1. FORCE_COLOR set and not empty: on (https://force-color.org).
+//   2. NO_COLOR set and not empty: off (https://no-color.org).
+//   3. TERM=dumb: off (a terminal without cursor or attribute control, terminfo(5)).
+//   4. Standard output is not a terminal (a file or a pipe): off.
+//   5. Windows: on only in a terminal that interprets the sequences itself (Windows Terminal sets WT_SESSION, ConEmu sets
+//      ConEmuANSI=ON, ANSICON sets ANSICON, VS Code and others set TERM_PROGRAM, MSYS2/Cygwin/Git Bash set TERM). The classic
+//      console shows them as text unless the program turns on ENABLE_VIRTUAL_TERMINAL_PROCESSING
+//      (https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences), which the stdlib does not offer yet.
+from "std" import String, Option, files
+from "std/os/env" import get
+
+define AUTO = 0
+define ON = 1
+define OFF = 2
+
+global forced: i32 = AUTO
+global detected: i32 = AUTO
+
+/// Forces escape sequences on or off for the whole program, whatever the environment and the terminal say.
+export fn setEnabled(on: bool) {
+    forced = on ? ON : OFF
+}
+
+/// Goes back to detection (the environment and the terminal) after `setEnabled`.
+export fn resetEnabled() {
+    forced = AUTO
+}
+
+/// True when escape sequences are written.
+export fn enabled() -> bool {
+    if forced != AUTO { return forced == ON }
+    if detected == AUTO { detected = detect() ? ON : OFF }
+    return detected == ON
+}
+
+fn detect() -> bool {
+    if isSet("FORCE_COLOR") { return true }
+    if isSet("NO_COLOR") || value("TERM").equals("dumb") || !files.isTerminal(1) { return false }
+#if os == "windows"
+    return isSet("WT_SESSION") || isSet("ANSICON") || isSet("TERM_PROGRAM") || isSet("TERM") || value("ConEmuANSI").equals("ON")
+#else
+    return true
+#endif
+}
+
+/// The value of the environment variable `name`, empty when it is not set.
+fn value(name: str) -> String {
+    local key = String(name)
+    switch get(&key) {
+        case Option.Some(v) { return v.clone() }
+        case Option.None { }
+    }
+    return String()
+}
+
+fn isSet(name: str) -> bool {
+    return value(name).length() > 0
+}

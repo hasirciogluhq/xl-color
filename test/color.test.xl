@@ -1,0 +1,89 @@
+// Unit tests: the sequences built for each kind of color, the on/off switch and `strip`. Escape sequences are forced on (or
+// off) with `setEnabled`, so the result does not depend on the terminal or the environment.
+from "std" import String, Suite, T, suiteInit, test, suiteRun, expectEqStr, expectTrue, expectFalse
+from "github.com/hasirciogluhq/xl-color" import Attribute, Color, style, setEnabled, resetEnabled, red, bold, gray, strip
+
+fn same(t: *T, got: String, want: str) {
+    expectEqStr(t, got.asStr(), want)
+}
+
+fn basic(t: *T) {
+    setEnabled(true)
+    same(t, red("error"), "\x1b[31merror\x1b[0m")
+    same(t, bold("b"), "\x1b[1mb\x1b[0m")
+    same(t, gray("g"), "\x1b[90mg\x1b[0m")
+    local c = Color(Attribute.BgHiBlue)
+    same(t, c.wrap("x"), "\x1b[104mx\x1b[0m")
+}
+
+fn combined(t: *T) {
+    setEnabled(true)
+    local c = style(Attribute.Bold, Attribute.Underline, Attribute.FgYellow)
+    same(t, c.sequence(), "\x1b[1;4;33m")
+    local s = String("owned")
+    same(t, c.wrap(&s), "\x1b[1;4;33mowned\x1b[0m")
+}
+
+fn extended(t: *T) {
+    setEnabled(true)
+    local c = Color()
+    c.fg256(208)
+    c.bg256(0)
+    same(t, c.sequence(), "\x1b[38;5;208;48;5;0m")
+    local d = Color(Attribute.Bold)
+    d.rgb(255, 136, 0)
+    d.bgRgb(1, 2, 3)
+    same(t, d.sequence(), "\x1b[1;38;2;255;136;0;48;2;1;2;3m")
+}
+
+fn hex(t: *T) {
+    setEnabled(true)
+    local c = Color()
+    expectTrue(t, c.hex("#FF8800"))
+    expectTrue(t, c.bgHex("0a0"))
+    same(t, c.sequence(), "\x1b[38;2;255;136;0;48;2;0;170;0m")
+    local bad = Color()
+    expectFalse(t, bad.hex("#ff880"))
+    expectFalse(t, bad.hex("#gg0000"))
+    expectFalse(t, bad.hex(""))
+    expectTrue(t, bad.isEmpty())
+}
+
+fn switchedOff(t: *T) {
+    setEnabled(false)
+    same(t, red("plain"), "plain")
+    local c = style(Attribute.Bold)
+    same(t, c.sequence(), "")
+    setEnabled(true)
+    local empty = Color()
+    same(t, empty.wrap("as is"), "as is")
+    resetEnabled()
+}
+
+fn stripping(t: *T) {
+    setEnabled(true)
+    local c = Color()
+    c.rgb(1, 2, 3)
+    local colored = c.wrap("rgb")
+    same(t, strip(colored.asStr()), "rgb")
+    local mixed = red("a")
+    mixed.append(" b ")
+    local tail = bold("c")
+    mixed.append(&tail)
+    same(t, strip(mixed.asStr()), "a b c")
+    same(t, strip("no escapes"), "no escapes")
+    same(t, strip("lone \x1b and \x1b\x1b[1mend"), "lone \x1b and \x1bend")
+    same(t, strip("cut \x1b"), "cut \x1b")
+}
+
+@entry fn main() -> i32 {
+    local s: Suite
+    suiteInit(&s)
+    test(&s, "basic colors and styles", basic)
+    test(&s, "combined attributes", combined)
+    test(&s, "256 colors and rgb", extended)
+    test(&s, "hex codes", hex)
+    test(&s, "switched off", switchedOff)
+    test(&s, "strip", stripping)
+    return suiteRun(&s)
+}

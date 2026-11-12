@@ -1,2 +1,5 @@
-export from "./color.xl"
-export from "./helpers.xl"
+// xl-color: ANSI colors and styles for terminal output, switched off by NO_COLOR, TERM=dumb and redirection (detect.xl).
+export * from "attribute"
+export * from "detect"
+export * from "color"
+export * from "helpers"

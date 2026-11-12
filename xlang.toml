@@ -1,7 +1,5 @@
 [package]
 name = "xl-color"
-description = "ANSI color library for xlang"
-version = "0.1.0"
+description = "ANSI colors and styles for terminal output"
 
 [dependencies]
-# şimdilik yok

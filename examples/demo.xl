@@ -1,0 +1,25 @@
+// Every kind of color once: `xl run examples/demo.xl` (NO_COLOR=1 or a pipe shows the plain text).
+from "std" import println
+from "github.com/hasirciogluhq/xl-color" import Attribute, Color, style, red, green, yellow, cyan, gray, bold
+
+@entry fn main() -> i32 {
+    println(red("error: something failed").asStr())
+    println(green("ok").asStr())
+    println(yellow("warning").asStr())
+    println(cyan("info").asStr())
+    println(gray("debug").asStr())
+    println(bold("bold").asStr())
+
+    local title = style(Attribute.Bold, Attribute.Underline, Attribute.FgHiMagenta)
+    title.println("bold, underlined, bright magenta")
+
+    local orange = Color()
+    orange.hex("#ff8800")
+    orange.println("24-bit orange")
+
+    local badge = Color(Attribute.Bold)
+    badge.fg256(16)
+    badge.bg256(214)
+    badge.println(" 256-color badge ")
+    return 0
+}

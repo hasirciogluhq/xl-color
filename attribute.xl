@@ -1,0 +1,52 @@
+// SGR (Select Graphic Rendition) parameters: the numbers inside `ESC [ ... m`, ECMA-48 section 8.3.117
+// (https://ecma-international.org/publications-and-standards/standards/ecma-48/). The bright colors 90-97 and 100-107 are the
+// aixterm extension every current terminal supports (https://en.wikipedia.org/wiki/ANSI_escape_code#Colors).
+export enum Attribute: u8 {
+    Reset = 0,
+    Bold,
+    Faint,
+    Italic,
+    Underline,
+    Blink,
+    Reverse = 7,
+    Hidden,
+    Strike,
+
+    FgBlack = 30,
+    FgRed,
+    FgGreen,
+    FgYellow,
+    FgBlue,
+    FgMagenta,
+    FgCyan,
+    FgWhite,
+    FgDefault = 39,
+
+    BgBlack = 40,
+    BgRed,
+    BgGreen,
+    BgYellow,
+    BgBlue,
+    BgMagenta,
+    BgCyan,
+    BgWhite,
+    BgDefault = 49,
+
+    FgHiBlack = 90,
+    FgHiRed,
+    FgHiGreen,
+    FgHiYellow,
+    FgHiBlue,
+    FgHiMagenta,
+    FgHiCyan,
+    FgHiWhite,
+
+    BgHiBlack = 100,
+    BgHiRed,
+    BgHiGreen,
+    BgHiYellow,
+    BgHiBlue,
+    BgHiMagenta,
+    BgHiCyan,
+    BgHiWhite
+}

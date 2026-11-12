@@ -1,0 +1,38 @@
+name: ci
+
+# Builds and runs test/run.sh on every host xlang ships for. The compiler and the stdlib come from their GitHub releases (the
+# newest stable, else the newest pre-release) through the xlang toolchain action, cached by the pair of tags.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2025]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - id: toolchain
+        uses: hasirciogluhq/xlang/.github/actions/toolchain@development
+      - name: test/run.sh
+        env:
+          STD: ${{ steps.toolchain.outputs.std }}
+        run: test/run.sh "$(command -v xlc)" "$STD"
