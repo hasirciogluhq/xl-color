@@ -108,9 +108,9 @@ Decided once, on first use, unless `setEnabled` forces it:
 2. `NO_COLOR` set and not empty: off ([no-color.org](https://no-color.org)).
 3. `TERM=dumb`: off.
 4. Standard output is a file or a pipe: off.
-5. Windows: on in terminals that interpret the sequences themselves (Windows Terminal, VS Code, ConEmu, ANSICON, MSYS2,
-   Cygwin, Git Bash). The classic console window shows them as text unless the program turns on virtual terminal
-   processing, which the xlang stdlib does not offer yet, so colors stay off there.
+5. Windows: on when the console accepts virtual terminal processing, which xl-color turns on (the classic console window
+   on Windows 10 1511 and later), and in terminals that interpret the sequences themselves (Windows Terminal, VS Code,
+   ConEmu, ANSICON, MSYS2, Cygwin, Git Bash).
 
 ## Development
 

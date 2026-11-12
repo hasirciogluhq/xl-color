@@ -50,8 +50,7 @@ export fn strip(s: str) -> String {
     local out = String()
     local afterEsc = false
     local inCsi = false
-    for p in s {
-        local b = *p
+    for b in s {
         if inCsi {
             inCsi = b < 0x40 || b > 0x7e
         } else if afterEsc {
