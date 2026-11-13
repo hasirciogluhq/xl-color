@@ -115,10 +115,13 @@ Decided once, on first use, unless `setEnabled` forces it:
 ## Development
 
 ```bash
-test/run.sh <xlc> <stdlib dir>       # unit tests, then builds examples/demo.xl and checks it with and without a terminal
+xl test                              # unit tests
+xl run examples/demo.xl              # every kind of color once
+test/run.sh <xlc> <stdlib dir>       # what CI runs: the unit tests, then the demo with and without a terminal
 ```
 
-`examples/demo.xl` shows every kind of color once; copy it into a project that depends on xl-color and `xl run` it.
+The tests and the demo import the library relatively (`"../index"`); in a project that depends on xl-color, import
+`"github.com/hasirciogluhq/xl-color"` instead.
 
 CI runs the tests on Linux and macOS (x86-64, arm64) and Windows x86-64 with the newest `xlc` and stdlib releases. A `v*` tag
 publishes a release once they pass.

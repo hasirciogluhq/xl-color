@@ -1,7 +1,7 @@
 // Unit tests: the sequences built for each kind of color, the on/off switch and `strip`. Escape sequences are forced on (or
 // off) with `setEnabled`, so the result does not depend on the terminal or the environment.
 from "std" import String, Suite, T, suiteInit, test, suiteRun, expectEqStr, expectTrue, expectFalse
-from "github.com/hasirciogluhq/xl-color" import Attribute, Color, style, setEnabled, resetEnabled, red, bold, gray, strip
+from "../index" import Attribute, Color, style, setEnabled, resetEnabled, red, bold, gray, strip
 
 fn same(t: *T, got: String, want: str) {
     expectEqStr(t, got.asStr(), want)

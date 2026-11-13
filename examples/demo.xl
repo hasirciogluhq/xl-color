@@ -1,6 +1,6 @@
 // Every kind of color once: `xl run examples/demo.xl` (NO_COLOR=1 or a pipe shows the plain text).
 from "std" import println
-from "github.com/hasirciogluhq/xl-color" import Attribute, Color, style, red, green, yellow, cyan, gray, bold
+from "../index" import Attribute, Color, style, red, green, yellow, cyan, gray, bold
 
 @entry fn main() -> i32 {
     println(red("error: something failed").asStr())
